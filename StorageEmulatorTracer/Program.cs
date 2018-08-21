@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Trace;
 
@@ -42,30 +44,32 @@ namespace SqlServerProfilerReader
 
         private static void AnalyzeQuery(string query)
         {
+            var errors = new List<string>();
+
             if (query.Contains("PartitionKey = @p0") == false)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Status: Missing PartitionKey, consider adding it so you can avoid reading the whole table");
-                Console.ResetColor();
-
-                return;
+                errors.Add("Status: Missing PartitionKey, consider adding it so you can avoid reading the whole table");
             }
 
             if (query.Contains("PartitionKey = @p0") && query.Contains("RowKey = @p1") == false)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Status: Missing RowKey, consider adding it to the query so you can avoid reading the whole partition");
-                Console.ResetColor();
-
-                return;
+                errors.Add("Status: Missing RowKey, consider adding it to the query so you can avoid reading the whole partition");
             }
 
             if (query.Contains("SELECT TOP 1001"))
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Status: Missing Take(N) value, consider specifying how many records you would like to read");
-                Console.ResetColor();
+                errors.Add("Status: Missing Take(N) value, consider specifying how many records you would like to read");
+            }
 
+            if (errors.Any())
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                foreach (var error in errors)
+                {
+                    Console.WriteLine(error);
+                }
+                
+                Console.ResetColor();
                 return;
             }
 
